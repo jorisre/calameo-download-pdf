@@ -101,6 +101,7 @@ if (function_exists('curl_init')) {
     $body = substr($response, $header_size);
 } else {
     log_backend_event('cURL extension unavailable, using stream fallback', []);
+    $http_response_header = [];
     $context = stream_context_create([
         'http' => [
             'method' => 'GET',
@@ -109,6 +110,7 @@ if (function_exists('curl_init')) {
             'timeout' => 30,
         ],
     ]);
+    error_clear_last();
     $body = @file_get_contents($url, false, $context);
     if ($body === false) {
         $last_error = error_get_last();
@@ -124,8 +126,11 @@ if (function_exists('curl_init')) {
         ]);
     }
     $response_headers = isset($http_response_header) && is_array($http_response_header) ? $http_response_header : [];
-    if (isset($response_headers[0]) && preg_match('/^HTTP\/\S+\s+(\d{3})/', $response_headers[0], $matches)) {
-        $http_response_code = (int) $matches[1];
+    for ($i = count($response_headers) - 1; $i >= 0; $i--) {
+        if (preg_match('/^HTTP\/\S+\s+(\d{3})/', $response_headers[$i], $matches)) {
+            $http_response_code = (int) $matches[1];
+            break;
+        }
     }
     if ($http_response_code <= 0) {
         $http_response_code = 502;
