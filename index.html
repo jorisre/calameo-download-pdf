@@ -45,14 +45,6 @@
 			padding: .75rem;
 			font-size: 16px;
 		}
-		@media screen and (min-width: 768px) {
-			form {
-				flex-direction: row;
-			}
-			input {
-				flex: 1;
-			}
-		}
 		@media print {
 			.print img {
 				width: 100%;
@@ -76,7 +68,7 @@
 			<br>Il est recommandé d'utiliser un navigateur basé sur Chromium. Firefox trame le texte, le rendant non-sélectionnable.
 		</p>
 		<form>
-			<input type="url" placeholder="URL Calameo">
+			<input type="url" placeholder="URL Calameo" required>
 			<button type="submit">Imprimer</button>
 		</form>
 		<hr style="display: none;">
@@ -94,7 +86,6 @@
 		const pageStyle = document.querySelector('#pageStyle');
 		const title = document.querySelector('title');
 		let hasFatalError = false;
-		const isDebug = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 		const MAX_ERROR_RESPONSE_LENGTH = 500;
 
 		const showDocumentError = (message, originalError) => {
@@ -132,10 +123,24 @@
 			label.textContent = 'Chargement des paramètres du document calemeo…';
 			
 			try {
+				const sourceUrl = new URL(input.value);
+				const pathParts = sourceUrl.pathname.split('/').filter(Boolean);
+				const bkcode = pathParts[pathParts.length - 1];
+				if (!bkcode) {
+					throw new Error(`Le code du document Calameo est introuvable dans l'URL saisie.`);
+				}
 				const host = window.location.hostname === 'comfoxx.github.io' ? 'https://comfoxx.fr/calameo-download-pdf/' : '';
-				const url = host + 'api/getbook.php?bkcode=' + input.value.substring(input.value.lastIndexOf('/') + 1, input.value.length).replace(/\?/g, '&');
+				const params = new URLSearchParams(sourceUrl.search);
+				params.set('bkcode', bkcode);
+				const url = host + 'api/getbook.php?' + params.toString();
+				console.info('Appel backend Calameo', { url, bkcode });
 				const response = await fetch(url);
 				const responseText = await response.text();
+				console.info('Réponse backend Calameo', {
+					status: response.status,
+					contentType: response.headers.get('content-type'),
+					bodyLength: responseText.length,
+				});
 				if (responseText.trim() === '') {
 					throw new Error(`Le document Calameo n'a pas pu être chargé (réponse vide).`);
 				}
@@ -144,9 +149,7 @@
 					book = JSON.parse(responseText);
 				} catch (jsonError) {
 					const sanitizedResponse = responseText.length > MAX_ERROR_RESPONSE_LENGTH ? `${responseText.substring(0, MAX_ERROR_RESPONSE_LENGTH)}…(tronqué)` : responseText;
-					if (isDebug) {
-						console.error('Réponse brute du backend (tronquée):', sanitizedResponse);
-					}
+					console.error('Réponse brute du backend (tronquée):', sanitizedResponse);
 					throw new Error(`Réponse JSON invalide : ${jsonError.message}. Voir la console pour la réponse brute.`);
 				}
 
