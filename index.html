@@ -75,8 +75,9 @@
 		const pageStyle = document.querySelector('#pageStyle');
 		const title = document.querySelector('title');
 		let hasFatalError = false;
+		const isDebug = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
-		const error = (message, originalError) => {
+		const showDocumentError = (message, originalError) => {
 			if (hasFatalError) {
 				if (originalError !== undefined) {
 					console.error(originalError);
@@ -125,7 +126,9 @@
 					book = JSON.parse(responseText);
 				} catch (jsonError) {
 					const sanitizedResponse = responseText.length > 500 ? `${responseText.substring(0, 500)}…(tronqué)` : responseText;
-					console.error('Réponse brute du backend (tronquée):', sanitizedResponse);
+					if (isDebug) {
+						console.error('Réponse brute du backend (tronquée):', sanitizedResponse);
+					}
 					throw new Error(`Réponse JSON invalide : ${jsonError.message}. Voir la console pour la réponse brute.`);
 				}
 
@@ -199,14 +202,14 @@
 					image.addEventListener('load', () => load());
 					image.addEventListener('error', (event) => {
 						imageErrors++;
-						console.error(`Échec de chargement de l'image page ${page}: ${src}`, event);
+						console.error(`Échec de chargement de l'image page ${page}.`, event);
 						load();
 					});
 					image.src = src;
 					images.appendChild(image);
 				}
 			} catch (err) {
-				error(err instanceof Error ? err.message : String(err), err);
+				showDocumentError(err instanceof Error ? err.message : String(err), err);
 				return null;
 			}
 		});

@@ -84,9 +84,10 @@ header('Access-Control-Allow-Origin: *', true, $http_response_code);
 if ($http_response_code >= 400) {
     $decoded_body = json_decode($body, true);
     $json_error = json_last_error();
+    $sanitized_body = strlen($body) > 1000 ? substr($body, 0, 1000) . '…(truncated)' : $body;
     $details = [
         'http_status' => $http_response_code,
-        'calameo_body' => $body,
+        'calameo_body' => $sanitized_body,
     ];
     if ($json_error !== JSON_ERROR_NONE) {
         $details['json_decode_error'] = json_last_error_msg();
