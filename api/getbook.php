@@ -76,7 +76,7 @@ $body = substr($response, $header_size);
 
 header_remove();
 foreach ($headers as $header) {
-    if ($header === '' || str_starts_with($header, 'HTTP/')) {
+    if ($header === '' || strpos($header, 'HTTP/') === 0) {
         continue;
     }
     header($header, false);

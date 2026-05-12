@@ -13,25 +13,44 @@
 		body {
 			margin: 0;
 			padding: 0;
+			height: 100vh;
+			font-family: sans-serif;
+			text-align: center;
 		}
-		@media screen {
-			body {
-				height: 100vh;
-				font-family: sans-serif;
-				text-align: center;
+		.screen {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			min-height: 60%;
+			padding: 1rem;
+			box-sizing: border-box;
+		}
+		.print img {
+			display: none;
+		}
+		p, form, hr, progress {
+			width: 100%;
+			max-width: 32rem;
+			box-sizing: border-box;
+		}
+		form {
+			display: flex;
+			flex-direction: column;
+			gap: .5rem;
+		}
+		input, button {
+			width: 100%;
+			box-sizing: border-box;
+			padding: .75rem;
+			font-size: 16px;
+		}
+		@media screen and (min-width: 768px) {
+			form {
+				flex-direction: row;
 			}
-			.screen {
-				display: flex;
-				flex-direction: column;
-				align-items: center;
-				justify-content: center;
-				min-height: 60%;
-			}
-			.print img {
-				display: none;
-			}
-			hr, progress {
-				min-width: 80%;
+			input {
+				flex: 1;
 			}
 		}
 		@media print {
@@ -57,7 +76,7 @@
 			<br>Il est recommandé d'utiliser un navigateur basé sur Chromium. Firefox trame le texte, le rendant non-sélectionnable.
 		</p>
 		<form>
-			<input type="url" placeholder="URL Calameo" size="50">
+			<input type="url" placeholder="URL Calameo">
 			<button type="submit">Imprimer</button>
 		</form>
 		<hr style="display: none;">
@@ -112,8 +131,6 @@
 
 			label.textContent = 'Chargement des paramètres du document calemeo…';
 			
-			let ready = false;
-
 			try {
 				const host = window.location.hostname === 'comfoxx.github.io' ? 'https://comfoxx.fr/calameo-download-pdf/' : '';
 				const url = host + 'api/getbook.php?bkcode=' + input.value.substring(input.value.lastIndexOf('/') + 1, input.value.length).replace(/\?/g, '&');
