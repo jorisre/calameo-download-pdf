@@ -74,8 +74,16 @@
 		const images = document.querySelector('#images');
 		const pageStyle = document.querySelector('#pageStyle');
 		const title = document.querySelector('title');
+		let hasFatalError = false;
 
 		const error = (message, originalError) => {
+			if (hasFatalError) {
+				if (originalError !== undefined) {
+					console.error(originalError);
+				}
+				return;
+			}
+			hasFatalError = true;
 			label.textContent = `Erreur lors du chargement du document : ${message}`;
 			label.style.color = 'red';
 			progress.style.display = 'none';
@@ -94,6 +102,7 @@
 			progress.style.display = 'block';
 			label.style.color = 'inherit';
 			label.textContent = 'Suppression du document précédent…';
+			hasFatalError = false;
 
 			while (images.firstChild) {
 				images.firstChild.remove();
@@ -112,13 +121,16 @@
 				try {
 					book = responseText === '' ? null : JSON.parse(responseText);
 				} catch (jsonError) {
-					throw new Error(`Réponse JSON invalide : ${jsonError.message}. Réponse brute : ${responseText}`);
+					console.error('Réponse brute du backend:', responseText);
+					throw new Error(`Réponse JSON invalide : ${jsonError.message}. Voir la console pour la réponse brute.`);
 				}
 
 				if (!response.ok) {
 					const backendError = book?.error || response.statusText || 'Erreur inconnue';
-					const backendDetails = book?.details ? ` Détails: ${JSON.stringify(book.details)}` : '';
-					throw new Error(`Erreur HTTP ${response.status} (${backendError}).${backendDetails}`);
+					if (book?.details) {
+						console.error('Détails backend:', book.details);
+					}
+					throw new Error(`Erreur HTTP ${response.status} (${backendError}).`);
 				}
 
 				const expires = response.headers.get("X-Calameo-Hash-Expires");
