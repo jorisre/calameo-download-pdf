@@ -1,5 +1,7 @@
 <?php
 const MAX_ERROR_BODY_LENGTH = 1000;
+@ini_set('display_errors', '0');
+@ini_set('html_errors', '0');
 
 function log_backend_event($message, $context = [])
 {
@@ -50,7 +52,7 @@ if (!isset($_SERVER['QUERY_STRING']) || trim($_SERVER['QUERY_STRING']) === '') {
 }
 
 $url = 'https://d.calameo.com/pinwheel/viewer/book/get?' . $_SERVER['QUERY_STRING'];
-$headers = [
+$request_headers = [
     'Cache-Control: no-cache',
     'Connection: keep-alive',
     'DNT: 1',
@@ -61,36 +63,79 @@ $headers = [
     'Sec-Fetch-Mode: cors',
     'Sec-Fetch-Site: same-site',
 ];
+$response_headers = [];
+$http_response_code = 0;
+$body = '';
 
-$ch = curl_init($url);
-curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . DIRECTORY_SEPARATOR . 'cert.cer');
-curl_setopt($ch, CURLOPT_HEADER, true);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-$response = curl_exec($ch);
-if ($response === false) {
-    $curl_error = curl_error($ch);
+if (function_exists('curl_init')) {
+    $ch = curl_init($url);
+    if ($ch === false) {
+        fail_with_error(502, 'Calameo request initialization failed.');
+    }
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $request_headers);
+    curl_setopt($ch, CURLOPT_CAINFO, __DIR__ . DIRECTORY_SEPARATOR . 'cert.cer');
+    curl_setopt($ch, CURLOPT_HEADER, true);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    $response = curl_exec($ch);
+    if ($response === false) {
+        $curl_error = curl_error($ch);
+        curl_close($ch);
+        log_backend_event('Calameo request failed', [
+            'transport' => 'curl',
+            'curl_error' => $curl_error,
+            'url' => 'https://d.calameo.com/pinwheel/viewer/book/get',
+        ]);
+        fail_with_error(502, 'Calameo request failed.', [
+            'transport' => 'curl',
+            'curl_error' => $curl_error,
+            'url' => 'https://d.calameo.com/pinwheel/viewer/book/get',
+        ]);
+    }
+    $curl_info = curl_getinfo($ch);
     curl_close($ch);
-    log_backend_event('Calameo request failed', [
-        'curl_error' => $curl_error,
-        'url' => 'https://d.calameo.com/pinwheel/viewer/book/get',
+    $header_size = $curl_info['header_size'];
+    $http_response_code = $curl_info['http_code'];
+    $headers_str = substr($response, 0, $header_size);
+    $response_headers = explode("\r\n", $headers_str);
+    $body = substr($response, $header_size);
+} else {
+    log_backend_event('cURL extension unavailable, using stream fallback', []);
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'header' => implode("\r\n", $request_headers) . "\r\n",
+            'ignore_errors' => true,
+            'timeout' => 30,
+        ],
     ]);
-    fail_with_error(502, 'Calameo request failed.', [
-        'curl_error' => $curl_error,
-        'url' => 'https://d.calameo.com/pinwheel/viewer/book/get',
-    ]);
+    $body = @file_get_contents($url, false, $context);
+    if ($body === false) {
+        $last_error = error_get_last();
+        log_backend_event('Calameo request failed', [
+            'transport' => 'stream',
+            'message' => $last_error['message'] ?? 'Unknown stream error',
+            'url' => 'https://d.calameo.com/pinwheel/viewer/book/get',
+        ]);
+        fail_with_error(502, 'Calameo request failed.', [
+            'transport' => 'stream',
+            'message' => $last_error['message'] ?? 'Unknown stream error',
+            'url' => 'https://d.calameo.com/pinwheel/viewer/book/get',
+        ]);
+    }
+    $response_headers = isset($http_response_header) && is_array($http_response_header) ? $http_response_header : [];
+    if (isset($response_headers[0]) && preg_match('/^HTTP\/\S+\s+(\d{3})/', $response_headers[0], $matches)) {
+        $http_response_code = (int) $matches[1];
+    }
+    if ($http_response_code <= 0) {
+        $http_response_code = 502;
+    }
 }
-$curl_info = curl_getinfo($ch);
-curl_close($ch);
-$header_size = $curl_info['header_size'];
-$http_response_code = $curl_info['http_code'];
-$headers_str = substr($response, 0, $header_size);
-$headers = explode("\r\n", $headers_str);
-$body = substr($response, $header_size);
+
 $content_type = '';
 
 header_remove();
-foreach ($headers as $header) {
+foreach ($response_headers as $header) {
     if ($header === '' || strpos($header, 'HTTP/') === 0) {
         continue;
     }
@@ -101,9 +146,10 @@ foreach ($headers as $header) {
 }
 header('Access-Control-Allow-Origin: *', true, $http_response_code);
 
+$decoded_body = json_decode($body, true);
+$json_error = json_last_error();
+
 if ($http_response_code >= 400) {
-    $decoded_body = json_decode($body, true);
-    $json_error = json_last_error();
     $sanitized_body = strlen($body) > MAX_ERROR_BODY_LENGTH ? substr($body, 0, MAX_ERROR_BODY_LENGTH) . '…(truncated)' : $body;
     $details = [
         'http_status' => $http_response_code,
@@ -118,8 +164,6 @@ if ($http_response_code >= 400) {
     fail_with_error($http_response_code, 'Calameo returned an error response.', $details);
 }
 
-$decoded_body = json_decode($body, true);
-$json_error = json_last_error();
 if ($json_error !== JSON_ERROR_NONE) {
     $details = [
         'http_status' => $http_response_code,
