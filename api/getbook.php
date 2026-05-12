@@ -13,9 +13,9 @@ function log_backend_event($message, $context = [])
 }
 
 
-function truncate_error_body($body)
+function truncate_error_body($body, $max_length = MAX_ERROR_BODY_LENGTH)
 {
-    return strlen($body) > MAX_ERROR_BODY_LENGTH ? substr($body, 0, MAX_ERROR_BODY_LENGTH) . '…(truncated)' : $body;
+    return strlen($body) > $max_length ? substr($body, 0, $max_length) . '…(truncated)' : $body;
 }
 
 function fail_with_error($http_status_code, $error, $details = [])
