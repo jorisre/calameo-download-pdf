@@ -117,9 +117,12 @@
 				const url = host + 'api/getbook.php?bkcode=' + input.value.substring(input.value.lastIndexOf('/') + 1, input.value.length).replace(/\?/g, '&');
 				const response = await fetch(url);
 				const responseText = await response.text();
+				if (responseText.trim() === '') {
+					throw new Error(`Le document Calameo n'a pas pu être chargé (réponse vide).`);
+				}
 				let book;
 				try {
-					book = responseText === '' ? null : JSON.parse(responseText);
+					book = JSON.parse(responseText);
 				} catch (jsonError) {
 					console.error('Réponse brute du backend:', responseText);
 					throw new Error(`Réponse JSON invalide : ${jsonError.message}. Voir la console pour la réponse brute.`);
@@ -141,10 +144,10 @@
 				}
 
 				if (book === undefined || book === null) {
-					throw new Error('JSON Book not filled.');
+					throw new Error(`Le document Calameo n'a pas pu être chargé (JSON vide).`);
 				}
 				if (book.status !== 'ok') {
-					throw new Error(`Error in Calameo response: ${JSON.stringify(book)}`);
+					throw new Error(`Erreur dans la réponse Calameo : ${JSON.stringify(book)}`);
 				}
 
 				label.textContent = 'Définition des paramètres du document…';
@@ -159,6 +162,7 @@
 				
 				const max = book.content.document.pages;
 				let loadedImages = 0;
+				let imageErrors = 0;
 				progress.max = max;
 
 				title.textContent = book.content.name;
@@ -167,9 +171,10 @@
 				const load = () => {
 					loadedImages++;
 					progress.value = loadedImages;
-					label.textContent = `Chargement des pages ${loadedImages}/${max}…`;
+					const warningSuffix = imageErrors > 0 ? ` (${imageErrors} image(s) en erreur, voir console)` : '';
+					label.textContent = `Chargement des pages ${loadedImages}/${max}…${warningSuffix}`;
 					if (loadedImages >= max) {
-						label.textContent = 'Chargement terminé, impression…';
+						label.textContent = imageErrors > 0 ? 'Chargement terminé avec erreurs, impression…' : 'Chargement terminé, impression…';
 						window.print();
 						hr.style.display = 'none';
 						label.style.display = 'none';
@@ -186,7 +191,11 @@
 					const src = `${imageUrl}/p${page}.svgz${sign}`;
 					const image = document.createElement('img');
 					image.addEventListener('load', () => load());
-					image.addEventListener('error', (event) => error(`Échec de chargement de l'image page ${page}: ${src}`, event));
+					image.addEventListener('error', (event) => {
+						imageErrors++;
+						console.error(`Échec de chargement de l'image page ${page}: ${src}`, event);
+						load();
+					});
 					image.src = src;
 					images.appendChild(image);
 				}
