@@ -124,7 +124,8 @@
 				try {
 					book = JSON.parse(responseText);
 				} catch (jsonError) {
-					console.error('Réponse brute du backend:', responseText);
+					const sanitizedResponse = responseText.length > 500 ? `${responseText.substring(0, 500)}…(tronqué)` : responseText;
+					console.error('Réponse brute du backend (tronquée):', sanitizedResponse);
 					throw new Error(`Réponse JSON invalide : ${jsonError.message}. Voir la console pour la réponse brute.`);
 				}
 
@@ -140,14 +141,19 @@
 				const path = response.headers.get("X-Calameo-Hash-Path");
 				const signature = response.headers.get("X-Calameo-Hash-Signature");
 				if (!expires || !path || !signature) {
-					throw new Error(`En-têtes Calameo manquants. expires="${expires}", path="${path}", signature="${signature}"`);
+					const missingHeaders = [];
+					if (!expires) missingHeaders.push('X-Calameo-Hash-Expires');
+					if (!path) missingHeaders.push('X-Calameo-Hash-Path');
+					if (!signature) missingHeaders.push('X-Calameo-Hash-Signature');
+					throw new Error(`En-têtes Calameo manquants : ${missingHeaders.join(', ')}.`);
 				}
 
 				if (book === undefined || book === null) {
 					throw new Error(`Le document Calameo n'a pas pu être chargé (JSON vide).`);
 				}
 				if (book.status !== 'ok') {
-					throw new Error(`Erreur dans la réponse Calameo : ${JSON.stringify(book)}`);
+					console.error('Réponse Calameo en erreur:', book);
+					throw new Error(`Erreur dans la réponse Calameo.`);
 				}
 
 				label.textContent = 'Définition des paramètres du document…';

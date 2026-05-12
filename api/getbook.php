@@ -61,7 +61,7 @@ if ($response === false) {
     curl_close($ch);
     fail_with_error(502, 'Calameo request failed.', [
         'curl_error' => $curl_error,
-        'url' => $url,
+        'url' => 'https://d.calameo.com/pinwheel/viewer/book/get',
     ]);
 }
 $curl_info = curl_getinfo($ch);
