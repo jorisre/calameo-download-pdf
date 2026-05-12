@@ -13,10 +13,6 @@ function fail_with_error($http_status_code, $error, $details = [])
     exit;
 }
 
-set_error_handler(function ($severity, $message, $file, $line) {
-    throw new ErrorException($message, 0, $severity, $file, $line);
-});
-
 set_exception_handler(function ($exception) {
     fail_with_error(500, 'PHP runtime error.', [
         'exception' => get_class($exception),
@@ -24,6 +20,17 @@ set_exception_handler(function ($exception) {
         'file' => $exception->getFile(),
         'line' => $exception->getLine(),
     ]);
+});
+
+register_shutdown_function(function () {
+    $last_error = error_get_last();
+    if ($last_error === null) {
+        return;
+    }
+    $fatal_types = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+    if (in_array($last_error['type'], $fatal_types, true)) {
+        fail_with_error(500, 'PHP fatal error.', $last_error);
+    }
 });
 
 if (!isset($_SERVER['QUERY_STRING']) || trim($_SERVER['QUERY_STRING']) === '') {

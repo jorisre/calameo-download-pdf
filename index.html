@@ -186,7 +186,7 @@
 					const src = `${imageUrl}/p${page}.svgz${sign}`;
 					const image = document.createElement('img');
 					image.addEventListener('load', () => load());
-					image.addEventListener('error', () => error(`Échec de chargement de l'image page ${page}: ${src}`));
+					image.addEventListener('error', (event) => error(`Échec de chargement de l'image page ${page}: ${src}`, event));
 					image.src = src;
 					images.appendChild(image);
 				}
