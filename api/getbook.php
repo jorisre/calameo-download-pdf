@@ -1,4 +1,35 @@
 <?php
+function fail_with_error($http_status_code, $error, $details = [])
+{
+    header_remove();
+    http_response_code($http_status_code);
+    header('Content-Type: application/json; charset=utf-8');
+    header('Access-Control-Allow-Origin: *');
+    echo json_encode([
+        'status' => 'error',
+        'error' => $error,
+        'details' => $details,
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+set_error_handler(function ($severity, $message, $file, $line) {
+    throw new ErrorException($message, 0, $severity, $file, $line);
+});
+
+set_exception_handler(function ($exception) {
+    fail_with_error(500, 'PHP runtime error.', [
+        'exception' => get_class($exception),
+        'message' => $exception->getMessage(),
+        'file' => $exception->getFile(),
+        'line' => $exception->getLine(),
+    ]);
+});
+
+if (!isset($_SERVER['QUERY_STRING']) || trim($_SERVER['QUERY_STRING']) === '') {
+    fail_with_error(400, 'Missing query string for Calameo API request.');
+}
+
 $url = 'https://d.calameo.com/pinwheel/viewer/book/get?' . $_SERVER['QUERY_STRING'];
 $headers = [
     'Cache-Control: no-cache',
@@ -19,9 +50,12 @@ curl_setopt($ch, CURLOPT_HEADER, true);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 $response = curl_exec($ch);
 if ($response === false) {
-    error_log('Curl error: ' . curl_error($ch), 0);
-    http_response_code(500);
-    exit;
+    $curl_error = curl_error($ch);
+    curl_close($ch);
+    fail_with_error(502, 'Calameo request failed.', [
+        'curl_error' => $curl_error,
+        'url' => $url,
+    ]);
 }
 $curl_info = curl_getinfo($ch);
 curl_close($ch);
@@ -33,8 +67,26 @@ $body = substr($response, $header_size);
 
 header_remove();
 foreach ($headers as $header) {
+    if ($header === '' || str_starts_with($header, 'HTTP/')) {
+        continue;
+    }
     header($header, false);
 }
 header('Access-Control-Allow-Origin: *', true, $http_response_code);
+
+if ($http_response_code >= 400) {
+    $decoded_body = json_decode($body, true);
+    $json_error = json_last_error();
+    $details = [
+        'http_status' => $http_response_code,
+        'calameo_body' => $body,
+    ];
+    if ($json_error !== JSON_ERROR_NONE) {
+        $details['json_decode_error'] = json_last_error_msg();
+    } else {
+        $details['calameo_json'] = $decoded_body;
+    }
+    fail_with_error($http_response_code, 'Calameo returned an error response.', $details);
+}
 
 echo $body;

@@ -75,12 +75,15 @@
 		const pageStyle = document.querySelector('#pageStyle');
 		const title = document.querySelector('title');
 
-		const error = () => {
-			label.textContent = 'Erreur lors du chargement du document.';
+		const error = (message, originalError) => {
+			label.textContent = `Erreur lors du chargement du document : ${message}`;
 			label.style.color = 'red';
 			progress.style.display = 'none';
 			progress.value = 0;
 			progress.max = 0;
+			if (originalError !== undefined) {
+				console.error(originalError);
+			}
 		};
 
 		form.addEventListener('submit', async e => {
@@ -100,66 +103,84 @@
 			
 			let ready = false;
 
-			const host = window.location.hostname == 'comfoxx.github.io' ? 'https://comfoxx.fr/calameo-download-pdf/' : '';
-			const url = host + 'api/getbook.php?bkcode=' + input.value.substring(input.value.lastIndexOf('/') + 1, input.value.length).replace(/\?/g, '&');
-			const response = await fetch(url);
-			const book = await response.json();
-			const expires = response.headers.get("X-Calameo-Hash-Expires");
-			const path = response.headers.get("X-Calameo-Hash-Path");
-			const signature = response.headers.get("X-Calameo-Hash-Signature");
-
-			if (book === undefined) {
-				error();
-				console.error('JSON Book not filled.');
-				return null;
-			}
-			if (book.status !== 'ok') {
-				error();
-				console.error('Error in Calameo response.', book);
-				return null;
-			}
-
-			label.textContent = 'Définition des paramètres du document…';
-			
-			const width = book.content.document.width + 'px';
-			const height = book.content.document.height + 'px';
-			pageStyle.innerHTML = `
-				@page {
-					size: ${width} ${height};
-					margin: 0;
-				}`;
-			
-			const max = book.content.document.pages;
-			let loadedImages = 0;
-			progress.max = max;
-
-			title.textContent = book.content.name;
-			label.textContent = `Chargement des pages ${loadedImages}/${max}…`;
-
-			const load = () => {
-				loadedImages++;
-				progress.value = loadedImages;
-				label.textContent = `Chargement des pages ${loadedImages}/${max}…`;
-				if (loadedImages >= max) {
-					label.textContent = 'Chargement terminé, impression…';
-					window.print();
-					hr.style.display = 'none';
-					label.style.display = 'none';
-					progress.style.display = 'none';
-					progress.value = 0;
-					progress.max = 0;
-					title.textContent = 'Calameo Download PDF';
+			try {
+				const host = window.location.hostname == 'comfoxx.github.io' ? 'https://comfoxx.fr/calameo-download-pdf/' : '';
+				const url = host + 'api/getbook.php?bkcode=' + input.value.substring(input.value.lastIndexOf('/') + 1, input.value.length).replace(/\?/g, '&');
+				const response = await fetch(url);
+				const responseText = await response.text();
+				let book;
+				try {
+					book = responseText === '' ? null : JSON.parse(responseText);
+				} catch (jsonError) {
+					throw new Error(`Réponse JSON invalide : ${jsonError.message}. Réponse brute : ${responseText}`);
 				}
-			};
 
-			const sign = ["?_token_=exp=" + expires, "acl=" + path, "hmac=" + signature].join("~");
-			const imageUrl = book.content.domains.secured.svg + book.content.key + '/';
-			for (let page = 1; page <= max; page++) {
-				const src = `${imageUrl}/p${page}.svgz${sign}`;
-				const image = document.createElement('img');
-				image.addEventListener('load', e => load());
-				image.src = src;
-				images.appendChild(image);
+				if (!response.ok) {
+					const backendError = book?.error || response.statusText || 'Erreur inconnue';
+					const backendDetails = book?.details ? ` Détails: ${JSON.stringify(book.details)}` : '';
+					throw new Error(`Erreur HTTP ${response.status} (${backendError}).${backendDetails}`);
+				}
+
+				const expires = response.headers.get("X-Calameo-Hash-Expires");
+				const path = response.headers.get("X-Calameo-Hash-Path");
+				const signature = response.headers.get("X-Calameo-Hash-Signature");
+				if (!expires || !path || !signature) {
+					throw new Error(`En-têtes Calameo manquants. expires="${expires}", path="${path}", signature="${signature}"`);
+				}
+
+				if (book === undefined || book === null) {
+					throw new Error('JSON Book not filled.');
+				}
+				if (book.status !== 'ok') {
+					throw new Error(`Error in Calameo response: ${JSON.stringify(book)}`);
+				}
+
+				label.textContent = 'Définition des paramètres du document…';
+				
+				const width = book.content.document.width + 'px';
+				const height = book.content.document.height + 'px';
+				pageStyle.innerHTML = `
+					@page {
+						size: ${width} ${height};
+						margin: 0;
+					}`;
+				
+				const max = book.content.document.pages;
+				let loadedImages = 0;
+				progress.max = max;
+
+				title.textContent = book.content.name;
+				label.textContent = `Chargement des pages ${loadedImages}/${max}…`;
+
+				const load = () => {
+					loadedImages++;
+					progress.value = loadedImages;
+					label.textContent = `Chargement des pages ${loadedImages}/${max}…`;
+					if (loadedImages >= max) {
+						label.textContent = 'Chargement terminé, impression…';
+						window.print();
+						hr.style.display = 'none';
+						label.style.display = 'none';
+						progress.style.display = 'none';
+						progress.value = 0;
+						progress.max = 0;
+						title.textContent = 'Calameo Download PDF';
+					}
+				};
+
+				const sign = ["?_token_=exp=" + expires, "acl=" + path, "hmac=" + signature].join("~");
+				const imageUrl = book.content.domains.secured.svg + book.content.key + '/';
+				for (let page = 1; page <= max; page++) {
+					const src = `${imageUrl}/p${page}.svgz${sign}`;
+					const image = document.createElement('img');
+					image.addEventListener('load', () => load());
+					image.addEventListener('error', () => error(`Échec de chargement de l'image page ${page}: ${src}`));
+					image.src = src;
+					images.appendChild(image);
+				}
+			} catch (err) {
+				error(err instanceof Error ? err.message : String(err), err);
+				return null;
 			}
 		});
 	</script>
