@@ -12,6 +12,12 @@ function log_backend_event($message, $context = [])
     error_log('[getbook] ' . $message . ' ' . $json_context);
 }
 
+
+function truncate_error_body($body)
+{
+    return strlen($body) > MAX_ERROR_BODY_LENGTH ? substr($body, 0, MAX_ERROR_BODY_LENGTH) . '…(truncated)' : $body;
+}
+
 function fail_with_error($http_status_code, $error, $details = [])
 {
     header_remove();
@@ -47,7 +53,6 @@ register_shutdown_function(function () {
 });
 
 if (!isset($_SERVER['QUERY_STRING']) || trim($_SERVER['QUERY_STRING']) === '') {
-    log_backend_event('Missing query string', []);
     fail_with_error(400, 'Missing query string for Calameo API request.');
 }
 
@@ -100,7 +105,6 @@ if (function_exists('curl_init')) {
     $response_headers = explode("\r\n", $headers_str);
     $body = substr($response, $header_size);
 } else {
-    log_backend_event('cURL extension unavailable, using stream fallback', []);
     unset($http_response_header);
     $context = stream_context_create([
         'http' => [
@@ -156,7 +160,7 @@ $decoded_body = json_decode($body, true);
 $json_error = json_last_error();
 
 if ($http_response_code >= 400) {
-    $sanitized_body = strlen($body) > MAX_ERROR_BODY_LENGTH ? substr($body, 0, MAX_ERROR_BODY_LENGTH) . '…(truncated)' : $body;
+    $sanitized_body = truncate_error_body($body);
     $details = [
         'http_status' => $http_response_code,
         'calameo_body' => $sanitized_body,
@@ -175,7 +179,7 @@ if ($json_error !== JSON_ERROR_NONE) {
         'http_status' => $http_response_code,
         'content_type' => $content_type,
         'json_decode_error' => json_last_error_msg(),
-        'calameo_body' => strlen($body) > MAX_ERROR_BODY_LENGTH ? substr($body, 0, MAX_ERROR_BODY_LENGTH) . '…(truncated)' : $body,
+        'calameo_body' => truncate_error_body($body),
     ];
     log_backend_event('Calameo returned non-JSON body', $details);
     fail_with_error(502, 'Calameo returned an invalid JSON response.', $details);

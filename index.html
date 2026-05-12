@@ -138,14 +138,8 @@
 				const params = new URLSearchParams(sourceUrl.search);
 				params.set('bkcode', bkcode);
 				const url = host + 'api/getbook.php?' + params.toString();
-				console.info('Appel backend Calameo', { url, bkcode });
 				const response = await fetch(url);
 				const responseText = await response.text();
-				console.info('Réponse backend Calameo', {
-					status: response.status,
-					contentType: response.headers.get('content-type'),
-					bodyLength: responseText.length,
-				});
 				if (responseText.trim() === '') {
 					throw new Error(`Le document Calameo n'a pas pu être chargé (réponse vide).`);
 				}
