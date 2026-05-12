@@ -13,8 +13,11 @@ function log_backend_event($message, $context = [])
 }
 
 
-function truncate_error_body($body, $max_length = MAX_ERROR_BODY_LENGTH)
+function truncate_error_body($body, $max_length = null)
 {
+    if ($max_length === null) {
+        $max_length = MAX_ERROR_BODY_LENGTH;
+    }
     return strlen($body) > $max_length ? substr($body, 0, $max_length) . '…(truncated)' : $body;
 }
 
