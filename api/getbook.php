@@ -101,6 +101,7 @@ if (function_exists('curl_init')) {
     $body = substr($response, $header_size);
 } else {
     log_backend_event('cURL extension unavailable, using stream fallback', []);
+    // Reset to avoid stale headers in long-lived PHP worker processes.
     $http_response_header = [];
     $context = stream_context_create([
         'http' => [
@@ -128,7 +129,7 @@ if (function_exists('curl_init')) {
     $response_headers = isset($http_response_header) && is_array($http_response_header) ? $http_response_header : [];
     // Redirect chains can include multiple HTTP status lines; the last one is the final response.
     for ($i = count($response_headers) - 1; $i >= 0; $i--) {
-        if (preg_match('/^HTTP\/\S+\s+(\d{3})/', $response_headers[$i], $matches)) {
+        if (preg_match('/^HTTP\/\S+\s+(\d+)/', $response_headers[$i], $matches)) {
             $http_response_code = (int) $matches[1];
             break;
         }
