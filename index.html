@@ -76,6 +76,7 @@
 		const title = document.querySelector('title');
 		let hasFatalError = false;
 		const isDebug = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+		const MAX_ERROR_RESPONSE_LENGTH = 500;
 
 		const showDocumentError = (message, originalError) => {
 			if (hasFatalError) {
@@ -114,7 +115,7 @@
 			let ready = false;
 
 			try {
-				const host = window.location.hostname == 'comfoxx.github.io' ? 'https://comfoxx.fr/calameo-download-pdf/' : '';
+				const host = window.location.hostname === 'comfoxx.github.io' ? 'https://comfoxx.fr/calameo-download-pdf/' : '';
 				const url = host + 'api/getbook.php?bkcode=' + input.value.substring(input.value.lastIndexOf('/') + 1, input.value.length).replace(/\?/g, '&');
 				const response = await fetch(url);
 				const responseText = await response.text();
@@ -125,7 +126,7 @@
 				try {
 					book = JSON.parse(responseText);
 				} catch (jsonError) {
-					const sanitizedResponse = responseText.length > 500 ? `${responseText.substring(0, 500)}…(tronqué)` : responseText;
+					const sanitizedResponse = responseText.length > MAX_ERROR_RESPONSE_LENGTH ? `${responseText.substring(0, MAX_ERROR_RESPONSE_LENGTH)}…(tronqué)` : responseText;
 					if (isDebug) {
 						console.error('Réponse brute du backend (tronquée):', sanitizedResponse);
 					}

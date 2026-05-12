@@ -1,4 +1,6 @@
 <?php
+const MAX_ERROR_BODY_LENGTH = 1000;
+
 function fail_with_error($http_status_code, $error, $details = [])
 {
     header_remove();
@@ -84,7 +86,7 @@ header('Access-Control-Allow-Origin: *', true, $http_response_code);
 if ($http_response_code >= 400) {
     $decoded_body = json_decode($body, true);
     $json_error = json_last_error();
-    $sanitized_body = strlen($body) > 1000 ? substr($body, 0, 1000) . '…(truncated)' : $body;
+    $sanitized_body = strlen($body) > MAX_ERROR_BODY_LENGTH ? substr($body, 0, MAX_ERROR_BODY_LENGTH) . '…(truncated)' : $body;
     $details = [
         'http_status' => $http_response_code,
         'calameo_body' => $sanitized_body,
