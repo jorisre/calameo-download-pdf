@@ -61,7 +61,7 @@
 		}
 
 		/* ── Width-constrained elements ── */
-		p, form, hr, progress, label {
+		p, form, label {
 			width: 100%;
 			max-width: 28rem;
 		}
@@ -142,49 +142,27 @@
 		button[type="submit"]:active {
 			opacity: 0.76;
 		}
-
-		/* ── Separator ── */
-		hr {
-			border: none;
-			border-top: 1px solid var(--border);
-			margin: 1.25rem auto;
+		button[type="submit"]:disabled {
+			opacity: 0.6;
+			cursor: not-allowed;
+		}
+		@keyframes spin {
+			to { transform: rotate(360deg); }
+		}
+		.lucide-loader-circle {
+			animation: spin 0.8s linear infinite;
 		}
 
-		/* ── Status label ── */
+		/* ── Status label (error only) ── */
 		label {
-			display: block;
+			display: none;
 			font-size: 0.8125rem;
-			color: var(--muted-foreground);
-			margin-bottom: 0.5rem;
+			color: var(--destructive);
+			margin-top: 0.75rem;
 			text-align: left;
 		}
 		label.error {
-			color: var(--destructive);
-		}
-
-		/* ── Progress bar ── */
-		progress {
-			appearance: none;
-			-webkit-appearance: none;
 			display: block;
-			height: 4px;
-			border: none;
-			border-radius: 9999px;
-			background-color: var(--muted);
-			overflow: hidden;
-		}
-		progress::-webkit-progress-bar {
-			background-color: var(--muted);
-			border-radius: 9999px;
-		}
-		progress::-webkit-progress-value {
-			background-color: var(--primary);
-			border-radius: 9999px;
-			transition: width 0.2s ease;
-		}
-		progress::-moz-progress-bar {
-			background-color: var(--primary);
-			border-radius: 9999px;
 		}
 
 		/* ── Print media ── */
@@ -215,22 +193,27 @@
 				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right-icon lucide-arrow-right"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
 			</button>
 		</form>
-		<hr style="display: none;">
-		<label for="loading" style="display: none;">Chargement</label>
-		<progress id="loading" max="0" value="0" style="display: none;"></progress>
+		<label id="error-label"></label>
 	</div>
 	<div class="print" id="images"></div>
 	<script type="module">
 		const input = document.querySelector('input');
 		const form = document.querySelector('form');
-		const hr = document.querySelector('hr');
-		const label = document.querySelector('label');
-		const progress = document.querySelector('progress');
+		const btn = document.querySelector('button[type="submit"]');
+		const errorLabel = document.querySelector('#error-label');
 		const images = document.querySelector('#images');
 		const pageStyle = document.querySelector('#pageStyle');
 		const title = document.querySelector('title');
 		let hasFatalError = false;
 		const MAX_ERROR_RESPONSE_LENGTH = 500;
+
+		const ICON_ARROW = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right-icon lucide-arrow-right"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`;
+		const ICON_LOADER = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-loader-circle"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>`;
+
+		const setLoading = (loading) => {
+			btn.disabled = loading;
+			btn.innerHTML = loading ? ICON_LOADER : ICON_ARROW;
+		};
 
 		const showDocumentError = (message, originalError) => {
 			if (hasFatalError) {
@@ -240,11 +223,9 @@
 				return;
 			}
 			hasFatalError = true;
-			label.textContent = `Erreur lors du chargement du document : ${message}`;
-			label.classList.add('error');
-			progress.style.display = 'none';
-			progress.value = 0;
-			progress.max = 0;
+			errorLabel.textContent = `Erreur : ${message}`;
+			errorLabel.classList.add('error');
+			setLoading(false);
 			if (originalError !== undefined) {
 				console.error(originalError);
 			}
@@ -252,20 +233,16 @@
 
 		form.addEventListener('submit', async e => {
 			e.preventDefault();
-			
-			hr.style.display = 'block';
-			label.style.display = 'block';
-			progress.style.display = 'block';
-			label.classList.remove('error');
-			label.textContent = 'Suppression du document précédent…';
+
+			errorLabel.classList.remove('error');
+			errorLabel.textContent = '';
 			hasFatalError = false;
+			setLoading(true);
 
 			while (images.firstChild) {
 				images.firstChild.remove();
 			}
 
-			label.textContent = 'Chargement des paramètres du document calemeo…';
-			
 			try {
 				let sourceUrl;
 				try {
@@ -323,8 +300,6 @@
 					throw new Error(`Erreur dans la réponse Calameo.`);
 				}
 
-				label.textContent = 'Définition des paramètres du document…';
-				
 				const width = book.content.document.width + 'px';
 				const height = book.content.document.height + 'px';
 				pageStyle.innerHTML = `
@@ -332,28 +307,18 @@
 						size: ${width} ${height};
 						margin: 0;
 					}`;
-				
+
 				const max = book.content.document.pages;
 				let loadedImages = 0;
 				let imageErrors = 0;
-				progress.max = max;
 
 				title.textContent = book.content.name;
-				label.textContent = `Chargement des pages ${loadedImages}/${max}…`;
 
 				const load = () => {
 					loadedImages++;
-					progress.value = loadedImages;
-					const warningSuffix = imageErrors > 0 ? ` (${imageErrors} image(s) en erreur, voir console)` : '';
-					label.textContent = `Chargement des pages ${loadedImages}/${max}…${warningSuffix}`;
 					if (loadedImages >= max) {
-						label.textContent = imageErrors > 0 ? 'Chargement terminé avec erreurs, impression…' : 'Chargement terminé, impression…';
 						window.print();
-						hr.style.display = 'none';
-						label.style.display = 'none';
-						progress.style.display = 'none';
-						progress.value = 0;
-						progress.max = 0;
+						setLoading(false);
 						title.textContent = 'Calameo Download PDF';
 					}
 				};
