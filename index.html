@@ -76,6 +76,8 @@
 			line-height: 1.5;
 			-webkit-font-smoothing: antialiased;
 			text-align: center;
+			display: flex;
+			flex-direction: column;
 		}
 
 		/* ── Layout ── */
@@ -86,6 +88,7 @@
 			justify-content: center;
 			min-height: 100vh;
 			padding: 2rem 1rem;
+			flex: 1;
 		}
 
 		p,
@@ -220,6 +223,33 @@
 		.print img {
 			display: none;
 		}
+		
+		/* ── Footer ── */
+		.footer {
+			width: 100%;
+			padding: 1rem 1.25rem;
+			display: flex;
+			justify-content: flex-end;
+			align-items: center;
+			gap: 0.5rem;
+			color: var(--muted-foreground);
+			font-size: 0.75rem;
+		}
+		
+		.footer a {
+			color: var(--muted-foreground);
+			text-decoration: none;
+			transition: opacity 0.15s;
+		}
+		
+		.footer a:hover {
+			opacity: 0.8;
+		}
+		
+		/* séparateur vertical */
+		.footer .dot {
+			margin: 0 0.25rem;
+		}
 
 		@media print {
 			.print img {
@@ -282,6 +312,18 @@
 	</div>
 
 	<div class="print" id="images"></div>
+	
+	<footer class="footer">
+		<a href="https://github.com/jorisre/calameo-download-pdf" target="_blank" rel="noopener noreferrer">
+			GitHub
+		</a>
+	
+		<span class="dot">•</span>
+	
+		<a href="https://github.com/ComFoxx/calameo-download-pdf" target="_blank" rel="noopener noreferrer">
+			Projet basé sur ComFoxx
+		</a>
+	</footer>
 
 	<script type="module">
 		/* ───────────────────────────────
