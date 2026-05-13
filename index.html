@@ -3,6 +3,7 @@
 <head>
 	<title>Calameo Download PDF</title>
 	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta name="title" content="Télécharger un document Calameo en PDF">
 	<meta name="description" content="Télécharger un document Calameo au format PDF avec l'impression du navigateur web.">
 	<meta property="og:type" content="website">
@@ -10,41 +11,166 @@
 	<meta property="og:title" content="Télécharger un document Calameo en PDF">
 	<meta property="og:description" content="Télécharger un document Calameo au format PDF avec l'impression du navigateur web.">
 	<style>
+		/* ── Design Tokens – OLED Dark (Shadcn standard) ── */
+		:root {
+			--background: #000000;
+			--foreground: #fafafa;
+			--muted: #111111;
+			--muted-foreground: #a1a1aa;
+			--border: #27272a;
+			--input: #18181b;
+			--ring: #fafafa;
+			--primary: #fafafa;
+			--primary-foreground: #000000;
+			--destructive: #ef4444;
+			--radius: 9999px;
+			--font-sans: Verdana, Geneva, Tahoma, sans-serif;
+			--height-control: 2.5rem; /* 40 px – unified control height */
+		}
+
+		/* ── Reset & Base ── */
+		*, *::before, *::after {
+			box-sizing: border-box;
+		}
 		body {
 			margin: 0;
 			padding: 0;
-			height: 100vh;
-			font-family: sans-serif;
+			min-height: 100vh;
+			background-color: var(--background);
+			color: var(--foreground);
+			font-family: var(--font-sans);
+			font-size: 14px;
+			line-height: 1.5;
+			-webkit-font-smoothing: antialiased;
 			text-align: center;
 		}
+
+		/* ── Screen wrapper ── */
 		.screen {
 			display: flex;
 			flex-direction: column;
 			align-items: center;
 			justify-content: center;
-			min-height: 60%;
-			padding: 1rem;
-			box-sizing: border-box;
+			min-height: 100vh;
+			padding: 2rem 1rem;
 		}
+
+		/* ── Print: hide images on screen ── */
 		.print img {
 			display: none;
 		}
-		p, form, hr, progress {
+
+		/* ── Width-constrained elements ── */
+		p, form, label {
 			width: 100%;
-			max-width: 32rem;
-			box-sizing: border-box;
+			max-width: 28rem;
 		}
+
+		/* ── Logo image ── */
+		.logo {
+			width: 100%;
+			max-width: 20rem;
+			height: auto;
+			margin: 0 0 1rem;
+		}
+
+		/* ── Description ── */
+		p {
+			font-size: 0.8125rem;
+			color: var(--muted-foreground);
+			margin: 0 0 1.5rem;
+			text-align: center;
+		}
+
+		/* ── Form ── */
 		form {
 			display: flex;
-			flex-direction: column;
-			gap: .5rem;
+			flex-direction: row;
+			align-items: center;
+			gap: 1rem; /* 16 px */
 		}
-		input, button {
-			width: 100%;
-			box-sizing: border-box;
-			padding: .75rem;
-			font-size: 16px;
+
+		/* ── Input ── */
+		input[type="url"] {
+			flex: 1;
+			min-width: 0;
+			height: var(--height-control);
+			padding: 0 1rem;
+			background-color: var(--input);
+			color: var(--foreground);
+			border: 1px solid var(--border);
+			border-radius: var(--radius);
+			font-family: var(--font-sans);
+			font-size: 0.875rem;
+			outline: none;
+			transition: border-color 0.15s, box-shadow 0.15s;
 		}
+		input[type="url"]::placeholder {
+			color: var(--muted-foreground);
+		}
+		input[type="url"]:focus {
+			border-color: var(--ring);
+			box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+		}
+
+		/* ── Button ── */
+		button[type="submit"] {
+			flex-shrink: 0;
+			width: var(--height-control);
+			height: var(--height-control);
+			padding: 0;
+			gap: 0.375rem;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			background-color: var(--primary);
+			color: var(--primary-foreground);
+			border: none;
+			border-radius: var(--radius);
+			cursor: pointer;
+			transition: opacity 0.15s, width 0.2s;
+			white-space: nowrap;
+		}
+		button[type="submit"].counting {
+			width: auto;
+			padding: 0 0.75rem;
+			font-size: 0.75rem;
+			font-weight: 600;
+		}
+		button[type="submit"]:hover {
+			opacity: 0.88;
+		}
+		button[type="submit"]:focus-visible {
+			outline: none;
+			box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+		}
+		button[type="submit"]:active {
+			opacity: 0.76;
+		}
+		button[type="submit"]:disabled {
+			opacity: 0.6;
+			cursor: not-allowed;
+		}
+		@keyframes spin {
+			to { transform: rotate(360deg); }
+		}
+		.spin {
+			animation: spin 0.8s linear infinite;
+		}
+
+		/* ── Status label (error only) ── */
+		label {
+			display: none;
+			font-size: 0.8125rem;
+			color: var(--destructive);
+			margin-top: 0.75rem;
+			text-align: center;
+		}
+		label.error {
+			display: block;
+		}
+
+		/* ── Print media ── */
 		@media print {
 			.print img {
 				width: 100%;
@@ -62,31 +188,44 @@
 </head>
 <body>
 	<div class="screen">
-		<h1>Télécharger un document Calameo en PDF</h1>
+		<img src="calameo-pdf-dl.jpeg" alt="Calameo PDF Downloader" class="logo">
 		<p>
-			Afin de télécharger un document Calameo au format PDF, cette page web chargera les images svgz de chacune des pages puis vous proposera de les imprimer, vous pourrez ainsi demander à votre navigateur d'enregistrer le document au format pdf.
-			<br>Il est recommandé d'utiliser un navigateur basé sur Chromium. Firefox trame le texte, le rendant non-sélectionnable.
+			Obtiens un PDF depuis ton document Calameo
 		</p>
 		<form>
-			<input type="url" placeholder="URL Calameo" required>
-			<button type="submit">Imprimer</button>
+			<input type="url" placeholder="https://www.calameo.com/calameo/read/00000000197005f4f7c58" required>
+			<button type="submit" aria-label="Imprimer">
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right-icon lucide-arrow-right"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+			</button>
 		</form>
-		<hr style="display: none;">
-		<label for="loading" style="display: none;">Chargement</label>
-		<progress id="loading" max="0" value="0" style="display: none;"></progress>
+		<label id="error-label"></label>
 	</div>
 	<div class="print" id="images"></div>
 	<script type="module">
 		const input = document.querySelector('input');
 		const form = document.querySelector('form');
-		const hr = document.querySelector('hr');
-		const label = document.querySelector('label');
-		const progress = document.querySelector('progress');
+		const btn = document.querySelector('button[type="submit"]');
+		const errorLabel = document.querySelector('#error-label');
 		const images = document.querySelector('#images');
 		const pageStyle = document.querySelector('#pageStyle');
 		const title = document.querySelector('title');
 		let hasFatalError = false;
 		const MAX_ERROR_RESPONSE_LENGTH = 500;
+
+		const ICON_ARROW = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-down-icon lucide-file-down"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>`;
+		const ICON_LOADER = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="spin lucide lucide-loader-icon lucide-loader"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>`;
+
+		const setLoading = (loading) => {
+			btn.disabled = loading;
+			btn.classList.remove('counting');
+			btn.innerHTML = loading ? ICON_LOADER : ICON_ARROW;
+		};
+
+		const setCounter = (page, total) => {
+			btn.disabled = true;
+			btn.classList.add('counting');
+			btn.innerHTML = `${ICON_LOADER}<span>${page}/${total}</span>`;
+		};
 
 		const showDocumentError = (message, originalError) => {
 			if (hasFatalError) {
@@ -96,11 +235,9 @@
 				return;
 			}
 			hasFatalError = true;
-			label.textContent = `Erreur lors du chargement du document : ${message}`;
-			label.style.color = 'red';
-			progress.style.display = 'none';
-			progress.value = 0;
-			progress.max = 0;
+			errorLabel.textContent = `Erreur : ${message}`;
+			errorLabel.classList.add('error');
+			setLoading(false);
 			if (originalError !== undefined) {
 				console.error(originalError);
 			}
@@ -108,20 +245,16 @@
 
 		form.addEventListener('submit', async e => {
 			e.preventDefault();
-			
-			hr.style.display = 'block';
-			label.style.display = 'block';
-			progress.style.display = 'block';
-			label.style.color = 'inherit';
-			label.textContent = 'Suppression du document précédent…';
+
+			errorLabel.classList.remove('error');
+			errorLabel.textContent = '';
 			hasFatalError = false;
+			setLoading(true);
 
 			while (images.firstChild) {
 				images.firstChild.remove();
 			}
 
-			label.textContent = 'Chargement des paramètres du document calemeo…';
-			
 			try {
 				let sourceUrl;
 				try {
@@ -179,8 +312,6 @@
 					throw new Error(`Erreur dans la réponse Calameo.`);
 				}
 
-				label.textContent = 'Définition des paramètres du document…';
-				
 				const width = book.content.document.width + 'px';
 				const height = book.content.document.height + 'px';
 				pageStyle.innerHTML = `
@@ -188,34 +319,27 @@
 						size: ${width} ${height};
 						margin: 0;
 					}`;
-				
+
 				const max = book.content.document.pages;
 				let loadedImages = 0;
 				let imageErrors = 0;
-				progress.max = max;
 
 				title.textContent = book.content.name;
-				label.textContent = `Chargement des pages ${loadedImages}/${max}…`;
 
 				const load = () => {
 					loadedImages++;
-					progress.value = loadedImages;
-					const warningSuffix = imageErrors > 0 ? ` (${imageErrors} image(s) en erreur, voir console)` : '';
-					label.textContent = `Chargement des pages ${loadedImages}/${max}…${warningSuffix}`;
 					if (loadedImages >= max) {
-						label.textContent = imageErrors > 0 ? 'Chargement terminé avec erreurs, impression…' : 'Chargement terminé, impression…';
 						window.print();
-						hr.style.display = 'none';
-						label.style.display = 'none';
-						progress.style.display = 'none';
-						progress.value = 0;
-						progress.max = 0;
+						setLoading(false);
 						title.textContent = 'Calameo Download PDF';
+					} else {
+						setCounter(loadedImages, max);
 					}
 				};
 
 				const sign = ["?_token_=exp=" + expires, "acl=" + path, "hmac=" + signature].join("~");
 				const imageUrl = book.content.domains.secured.svg + book.content.key + '/';
+				setCounter(0, max);
 				for (let page = 1; page <= max; page++) {
 					const src = `${imageUrl}/p${page}.svgz${sign}`;
 					const image = document.createElement('img');
