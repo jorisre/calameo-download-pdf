@@ -161,6 +161,7 @@
 			display: inline-flex;
 			align-items: center;
 			justify-content: center;
+			gap: 4px;
 
 			flex-shrink: 0;
 
@@ -392,8 +393,7 @@
 			dom.button.classList.add('counting');
 
 			dom.button.innerHTML = `
-				${ICON_LOADER}
-				<span>${current}/${total}</span>
+				${ICON_LOADER}<span>${current}/${total}</span>
 			`;
 		}
 
