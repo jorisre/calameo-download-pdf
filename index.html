@@ -227,6 +227,25 @@
 			display: none;
 		}
 		
+		.info {
+	width: 100%;
+			max-width: 28rem;
+			margin: 0.75rem 0 1.25rem;
+		
+			font-size: 0.75rem;
+			line-height: 1.4;
+			color: var(--muted-foreground);
+		
+			padding: 0.75rem 1rem;
+		
+			border: 1px solid var(--border);
+			border-radius: var(--radius);
+		
+			background-color: var(--muted);
+		
+			text-align: left;
+		}
+		
 		/* ── Footer ── */
 		.footer {
 			width: 100%;
@@ -313,6 +332,10 @@
 
 		<label id="error-label"></label>
 	</div>
+	
+	<p class="info">
+		Pour un rendu optimal du PDF, utilisez de préférence Chrome ou un navigateur basé sur Chromium.
+	</p>
 
 	<div class="print" id="images"></div>
 	
