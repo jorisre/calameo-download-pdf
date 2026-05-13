@@ -119,6 +119,7 @@
 			width: var(--height-control);
 			height: var(--height-control);
 			padding: 0;
+			gap: 0.375rem;
 			display: inline-flex;
 			align-items: center;
 			justify-content: center;
@@ -127,7 +128,14 @@
 			border: none;
 			border-radius: var(--radius);
 			cursor: pointer;
-			transition: opacity 0.15s;
+			transition: opacity 0.15s, width 0.2s;
+			white-space: nowrap;
+		}
+		button[type="submit"].counting {
+			width: auto;
+			padding: 0 0.75rem;
+			font-size: 0.75rem;
+			font-weight: 600;
 		}
 		button[type="submit"]:hover {
 			opacity: 0.88;
@@ -209,7 +217,14 @@
 
 		const setLoading = (loading) => {
 			btn.disabled = loading;
+			btn.classList.remove('counting');
 			btn.innerHTML = loading ? ICON_LOADER : ICON_ARROW;
+		};
+
+		const setCounter = (page, total) => {
+			btn.disabled = true;
+			btn.classList.add('counting');
+			btn.innerHTML = `${ICON_LOADER}<span>${page}/${total}</span>`;
 		};
 
 		const showDocumentError = (message, originalError) => {
@@ -317,11 +332,14 @@
 						window.print();
 						setLoading(false);
 						title.textContent = 'Calameo Download PDF';
+					} else {
+						setCounter(loadedImages, max);
 					}
 				};
 
 				const sign = ["?_token_=exp=" + expires, "acl=" + path, "hmac=" + signature].join("~");
 				const imageUrl = book.content.domains.secured.svg + book.content.key + '/';
+				setCounter(0, max);
 				for (let page = 1; page <= max; page++) {
 					const src = `${imageUrl}/p${page}.svgz${sign}`;
 					const image = document.createElement('img');
