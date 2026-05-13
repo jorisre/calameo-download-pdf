@@ -145,6 +145,9 @@
 		input[type="url"]::placeholder {
 			color: var(--muted-foreground);
 			font-style: italic;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
 		}
 
 		input[type="url"]:focus {
