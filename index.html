@@ -2,14 +2,18 @@
 <html lang="fr">
 <head>
 	<title>Calameo Download PDF</title>
+
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 	<meta name="title" content="Télécharger un document Calameo en PDF">
 	<meta name="description" content="Télécharger un document Calameo au format PDF avec l'impression du navigateur web.">
+
 	<meta property="og:type" content="website">
 	<meta property="og:url" content="https://comfoxx.github.io/calameo-download-pdf/">
 	<meta property="og:title" content="Télécharger un document Calameo en PDF">
 	<meta property="og:description" content="Télécharger un document Calameo au format PDF avec l'impression du navigateur web.">
+
 	<style>
 		/* ── Design Tokens – OLED Dark (Shadcn standard) ── */
 		:root {
@@ -25,13 +29,14 @@
 			--destructive: #ef4444;
 			--radius: 9999px;
 			--font-sans: Verdana, Geneva, Tahoma, sans-serif;
-			--height-control: 2.5rem; /* 40 px – unified control height */
+			--height-control: 2.5rem;
 		}
 
 		/* ── Reset & Base ── */
 		*, *::before, *::after {
 			box-sizing: border-box;
 		}
+
 		body {
 			margin: 0;
 			padding: 0;
@@ -45,7 +50,7 @@
 			text-align: center;
 		}
 
-		/* ── Screen wrapper ── */
+		/* ── Layout ── */
 		.screen {
 			display: flex;
 			flex-direction: column;
@@ -55,39 +60,33 @@
 			padding: 2rem 1rem;
 		}
 
-		/* ── Print: hide images on screen ── */
-		.print img {
-			display: none;
-		}
-
-		/* ── Width-constrained elements ── */
-		p, form, label {
+		p,
+		form,
+		label {
 			width: 100%;
 			max-width: 28rem;
 		}
 
-		/* ── Logo image ── */
+		/* ── Logo ── */
 		.logo {
 			width: 100%;
 			max-width: 20rem;
 			height: auto;
-			margin: 0 0 1rem;
+			margin-bottom: 1rem;
 		}
 
 		/* ── Description ── */
 		p {
+			margin: 0 0 1.5rem;
 			font-size: 0.8125rem;
 			color: var(--muted-foreground);
-			margin: 0 0 1.5rem;
-			text-align: center;
 		}
 
 		/* ── Form ── */
 		form {
 			display: flex;
-			flex-direction: row;
 			align-items: center;
-			gap: 1rem; /* 16 px */
+			gap: 1rem;
 		}
 
 		/* ── Input ── */
@@ -96,265 +95,462 @@
 			min-width: 0;
 			height: var(--height-control);
 			padding: 0 1rem;
+
 			background-color: var(--input);
 			color: var(--foreground);
+
 			border: 1px solid var(--border);
 			border-radius: var(--radius);
+
 			font-family: var(--font-sans);
 			font-size: 0.875rem;
+
 			outline: none;
-			transition: border-color 0.15s, box-shadow 0.15s;
+			transition:
+				border-color 0.15s,
+				box-shadow 0.15s;
 		}
+
 		input[type="url"]::placeholder {
 			color: var(--muted-foreground);
+			font-style: italic;
 		}
+
 		input[type="url"]:focus {
 			border-color: var(--ring);
-			box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+			box-shadow:
+				0 0 0 2px var(--background),
+				0 0 0 4px var(--ring);
 		}
 
 		/* ── Button ── */
 		button[type="submit"] {
-			flex-shrink: 0;
-			width: var(--height-control);
-			height: var(--height-control);
-			padding: 0;
-			gap: 0.375rem;
 			display: inline-flex;
 			align-items: center;
 			justify-content: center;
+
+			flex-shrink: 0;
+
+			width: var(--height-control);
+			height: var(--height-control);
+			padding: 0;
+
 			background-color: var(--primary);
 			color: var(--primary-foreground);
+
 			border: none;
 			border-radius: var(--radius);
+
 			cursor: pointer;
-			transition: opacity 0.15s, width 0.2s;
 			white-space: nowrap;
+
+			transition:
+				opacity 0.15s,
+				width 0.2s;
 		}
-		button[type="submit"].counting {
+
+		button[type="submit"]:hover {
+			opacity: 0.88;
+		}
+
+		button[type="submit"]:active {
+			opacity: 0.76;
+		}
+
+		button[type="submit"]:disabled {
+			opacity: 0.6;
+			cursor: not-allowed;
+		}
+
+		button[type="submit"]:focus-visible {
+			outline: none;
+			box-shadow:
+				0 0 0 2px var(--background),
+				0 0 0 4px var(--ring);
+		}
+
+		button.counting {
 			width: auto;
 			padding: 0 0.75rem;
 			font-size: 0.75rem;
 			font-weight: 600;
 		}
-		button[type="submit"]:hover {
-			opacity: 0.88;
-		}
-		button[type="submit"]:focus-visible {
-			outline: none;
-			box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
-		}
-		button[type="submit"]:active {
-			opacity: 0.76;
-		}
-		button[type="submit"]:disabled {
-			opacity: 0.6;
-			cursor: not-allowed;
-		}
-		@keyframes spin {
-			to { transform: rotate(360deg); }
-		}
-		.spin {
-			animation: spin 0.8s linear infinite;
-		}
 
-		/* ── Status label (error only) ── */
+		/* ── Error ── */
 		label {
 			display: none;
+			margin-top: 0.75rem;
 			font-size: 0.8125rem;
 			color: var(--destructive);
-			margin-top: 0.75rem;
-			text-align: center;
 		}
+
 		label.error {
 			display: block;
 		}
 
-		/* ── Print media ── */
+		/* ── Print ── */
+		.print img {
+			display: none;
+		}
+
 		@media print {
 			.print img {
+				display: block;
 				width: 100%;
 				max-height: 100vh;
 				page-break-after: always;
 				page-break-inside: avoid;
-				display: block;
 			}
+
 			.screen {
 				display: none;
 			}
 		}
+
+		/* ── Loader ── */
+		@keyframes spin {
+			to {
+				transform: rotate(360deg);
+			}
+		}
+
+		.spin {
+			animation: spin 0.8s linear infinite;
+		}
 	</style>
+
 	<style id="pageStyle"></style>
 </head>
+
 <body>
 	<div class="screen">
-		<img src="calameo-pdf-dl.jpeg" alt="Calameo PDF Downloader" class="logo">
-		<p>
-			Obtiens un PDF depuis ton document Calameo
-		</p>
-		<form>
-			<input type="url" placeholder="https://www.calameo.com/calameo/read/00000000197005f4f7c58" required>
-			<button type="submit" aria-label="Imprimer">
-				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right-icon lucide-arrow-right"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+		<img
+			src="calameo-pdf-dl.jpeg"
+			alt="Calameo PDF Downloader"
+			class="logo"
+		>
+
+		<p>Obtiens un PDF depuis ton document Calameo</p>
+
+		<form id="download-form">
+			<input
+				type="url"
+				required
+				placeholder="https://www.calameo.com/calameo/read/00000000197005f4f7c58"
+			>
+
+			<button type="submit" aria-label="Télécharger">
+				<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+					viewBox="0 0 24 24" fill="none" stroke="currentColor"
+					stroke-width="2" stroke-linecap="round"
+					stroke-linejoin="round">
+					<path d="M5 12h14"/>
+					<path d="m12 5 7 7-7 7"/>
+				</svg>
 			</button>
 		</form>
+
 		<label id="error-label"></label>
 	</div>
+
 	<div class="print" id="images"></div>
+
 	<script type="module">
-		const input = document.querySelector('input');
-		const form = document.querySelector('form');
-		const btn = document.querySelector('button[type="submit"]');
-		const errorLabel = document.querySelector('#error-label');
-		const images = document.querySelector('#images');
-		const pageStyle = document.querySelector('#pageStyle');
-		const title = document.querySelector('title');
-		let hasFatalError = false;
+		/* ───────────────────────────────
+		   Constants
+		─────────────────────────────── */
+
+		const APP_TITLE = 'Calameo Download PDF';
 		const MAX_ERROR_RESPONSE_LENGTH = 500;
 
-		const ICON_ARROW = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-down-icon lucide-file-down"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>`;
-		const ICON_LOADER = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="spin lucide lucide-loader-icon lucide-loader"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>`;
+		const ICON_ARROW = `
+			<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+				viewBox="0 0 24 24" fill="none" stroke="currentColor"
+				stroke-width="2" stroke-linecap="round"
+				stroke-linejoin="round">
+				<path d="M5 12h14"/>
+				<path d="m12 5 7 7-7 7"/>
+			</svg>
+		`;
 
-		const setLoading = (loading) => {
-			btn.disabled = loading;
-			btn.classList.remove('counting');
-			btn.innerHTML = loading ? ICON_LOADER : ICON_ARROW;
+		const ICON_LOADER = `
+			<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+				viewBox="0 0 24 24" fill="none" stroke="currentColor"
+				stroke-width="2" stroke-linecap="round"
+				stroke-linejoin="round" class="spin">
+				<path d="M12 2v4"/>
+				<path d="m16.2 7.8 2.9-2.9"/>
+				<path d="M18 12h4"/>
+				<path d="m16.2 16.2 2.9 2.9"/>
+				<path d="M12 18v4"/>
+				<path d="m4.9 19.1 2.9-2.9"/>
+				<path d="M2 12h4"/>
+				<path d="m4.9 4.9 2.9 2.9"/>
+			</svg>
+		`;
+
+		/* ───────────────────────────────
+		   DOM
+		─────────────────────────────── */
+
+		const dom = {
+			form: document.querySelector('#download-form'),
+			input: document.querySelector('input'),
+			button: document.querySelector('button[type="submit"]'),
+			error: document.querySelector('#error-label'),
+			images: document.querySelector('#images'),
+			pageStyle: document.querySelector('#pageStyle'),
+			title: document.querySelector('title')
 		};
 
-		const setCounter = (page, total) => {
-			btn.disabled = true;
-			btn.classList.add('counting');
-			btn.innerHTML = `${ICON_LOADER}<span>${page}/${total}</span>`;
-		};
+		/* ───────────────────────────────
+		   UI
+		─────────────────────────────── */
 
-		const showDocumentError = (message, originalError) => {
-			if (hasFatalError) {
-				if (originalError !== undefined) {
-					console.error(originalError);
-				}
-				return;
-			}
-			hasFatalError = true;
-			errorLabel.textContent = `Erreur : ${message}`;
-			errorLabel.classList.add('error');
+		function setLoading(isLoading) {
+			dom.button.disabled = isLoading;
+			dom.button.classList.remove('counting');
+			dom.button.innerHTML = isLoading
+				? ICON_LOADER
+				: ICON_ARROW;
+		}
+
+		function setCounter(current, total) {
+			dom.button.disabled = true;
+			dom.button.classList.add('counting');
+
+			dom.button.innerHTML = `
+				${ICON_LOADER}
+				<span>${current}/${total}</span>
+			`;
+		}
+
+		function showError(message, error = null) {
+			dom.error.textContent = `Erreur : ${message}`;
+			dom.error.classList.add('error');
+
 			setLoading(false);
-			if (originalError !== undefined) {
-				console.error(originalError);
+
+			if (error) {
+				console.error(error);
 			}
-		};
+		}
 
-		form.addEventListener('submit', async e => {
-			e.preventDefault();
+		function clearError() {
+			dom.error.textContent = '';
+			dom.error.classList.remove('error');
+		}
 
-			errorLabel.classList.remove('error');
-			errorLabel.textContent = '';
-			hasFatalError = false;
-			setLoading(true);
+		function clearImages() {
+			dom.images.replaceChildren();
+		}
 
-			while (images.firstChild) {
-				images.firstChild.remove();
-			}
+		/* ───────────────────────────────
+		   Helpers
+		─────────────────────────────── */
+
+		function getBookCode(urlString) {
+			let url;
 
 			try {
-				let sourceUrl;
-				try {
-					sourceUrl = new URL(input.value);
-				} catch (_urlError) {
-					throw new Error(`L'URL saisie est invalide.`);
-				}
-				const pathParts = sourceUrl.pathname.split('/').filter(Boolean);
-				const bkcode = pathParts[pathParts.length - 1];
-				if (!bkcode) {
-					throw new Error(`Le code du document Calameo est introuvable dans l'URL saisie.`);
-				}
-				const host = window.location.hostname === 'comfoxx.github.io' ? 'https://comfoxx.fr/calameo-download-pdf/' : '';
-				const params = new URLSearchParams(sourceUrl.search);
-				params.set('bkcode', bkcode);
-				const url = host + 'api/getbook.php?' + params.toString();
-				const response = await fetch(url);
-				const responseText = await response.text();
-				if (responseText.trim() === '') {
-					throw new Error(`Le document Calameo n'a pas pu être chargé (réponse vide).`);
-				}
-				let book;
-				try {
-					book = JSON.parse(responseText);
-				} catch (jsonError) {
-					const sanitizedResponse = responseText.length > MAX_ERROR_RESPONSE_LENGTH ? `${responseText.substring(0, MAX_ERROR_RESPONSE_LENGTH)}…(tronqué)` : responseText;
-					console.error('Réponse brute du backend (tronquée):', sanitizedResponse);
-					throw new Error(`Réponse JSON invalide : ${jsonError.message}. Voir la console pour la réponse brute.`);
-				}
+				url = new URL(urlString);
+			} catch {
+				throw new Error(`L'URL saisie est invalide.`);
+			}
 
-				if (!response.ok) {
-					const backendError = book?.error || response.statusText || 'Erreur inconnue';
-					if (book?.details) {
-						console.error('Détails backend:', book.details);
-					}
-					throw new Error(`Erreur HTTP ${response.status} (${backendError}).`);
+			const parts = url.pathname
+				.split('/')
+				.filter(Boolean);
+
+			const bkcode = parts.at(-1);
+
+			if (!bkcode) {
+				throw new Error(
+					`Le code du document Calameo est introuvable dans l'URL saisie.`
+				);
+			}
+
+			return {
+				bkcode,
+				searchParams: url.searchParams
+			};
+		}
+
+		function buildApiUrl(bkcode, searchParams) {
+			const params = new URLSearchParams(searchParams);
+			params.set('bkcode', bkcode);
+
+			return `/api/getbook.php?${params}`;
+		}
+
+		function validateHeaders(headers) {
+			const requiredHeaders = {
+				expires: headers.get('X-Calameo-Hash-Expires'),
+				path: headers.get('X-Calameo-Hash-Path'),
+				signature: headers.get('X-Calameo-Hash-Signature')
+			};
+
+			const missing = Object.entries(requiredHeaders)
+				.filter(([, value]) => !value)
+				.map(([key]) => key);
+
+			if (missing.length) {
+				throw new Error(
+					`En-têtes Calameo manquants : ${missing.join(', ')}.`
+				);
+			}
+
+			return requiredHeaders;
+		}
+
+		function setPrintPageSize(width, height) {
+			dom.pageStyle.textContent = `
+				@page {
+					size: ${width}px ${height}px;
+					margin: 0;
 				}
+			`;
+		}
 
-				const expires = response.headers.get("X-Calameo-Hash-Expires");
-				const path = response.headers.get("X-Calameo-Hash-Path");
-				const signature = response.headers.get("X-Calameo-Hash-Signature");
-				if (!expires || !path || !signature) {
-					const missingHeaders = [];
-					if (!expires) missingHeaders.push('X-Calameo-Hash-Expires');
-					if (!path) missingHeaders.push('X-Calameo-Hash-Path');
-					if (!signature) missingHeaders.push('X-Calameo-Hash-Signature');
-					throw new Error(`En-têtes Calameo manquants : ${missingHeaders.join(', ')}.`);
-				}
+		async function fetchBook(url) {
+			const response = await fetch(url);
+			const text = await response.text();
 
-				if (book === undefined || book === null) {
-					throw new Error(`Le document Calameo n'a pas pu être chargé (JSON vide).`);
-				}
-				if (book.status !== 'ok') {
-					console.error('Réponse Calameo en erreur:', book);
-					throw new Error(`Erreur dans la réponse Calameo.`);
-				}
+			if (!text.trim()) {
+				throw new Error(
+					`Le document Calameo n'a pas pu être chargé (réponse vide).`
+				);
+			}
 
-				const width = book.content.document.width + 'px';
-				const height = book.content.document.height + 'px';
-				pageStyle.innerHTML = `
-					@page {
-						size: ${width} ${height};
-						margin: 0;
-					}`;
+			let data;
 
-				const max = book.content.document.pages;
-				let loadedImages = 0;
-				let imageErrors = 0;
+			try {
+				data = JSON.parse(text);
+			} catch (error) {
+				const sanitized =
+					text.length > MAX_ERROR_RESPONSE_LENGTH
+						? `${text.slice(0, MAX_ERROR_RESPONSE_LENGTH)}…(tronqué)`
+						: text;
 
-				title.textContent = book.content.name;
+				console.error('Réponse backend :', sanitized);
 
-				const load = () => {
-					loadedImages++;
-					if (loadedImages >= max) {
+				throw new Error(
+					`Réponse JSON invalide : ${error.message}`
+				);
+			}
+
+			if (!response.ok) {
+				throw new Error(
+					`Erreur HTTP ${response.status} (${data?.error || 'Erreur inconnue'}).`
+				);
+			}
+
+			if (data?.status !== 'ok') {
+				console.error(data);
+				throw new Error(`Erreur dans la réponse Calameo.`);
+			}
+
+			return {
+				data,
+				headers: validateHeaders(response.headers)
+			};
+		}
+
+		/* ───────────────────────────────
+		   Main
+		─────────────────────────────── */
+
+		dom.form.addEventListener('submit', async (event) => {
+			event.preventDefault();
+
+			clearError();
+			clearImages();
+			setLoading(true);
+
+			try {
+				const { bkcode, searchParams } =
+					getBookCode(dom.input.value);
+
+				const apiUrl =
+					buildApiUrl(bkcode, searchParams);
+
+				const {
+					data: book,
+					headers
+				} = await fetchBook(apiUrl);
+
+				const documentInfo = book.content.document;
+
+				setPrintPageSize(
+					documentInfo.width,
+					documentInfo.height
+				);
+
+				const totalPages = documentInfo.pages;
+
+				const token = [
+					`?_token_=exp=${headers.expires}`,
+					`acl=${headers.path}`,
+					`hmac=${headers.signature}`
+				].join('~');
+
+				const baseImageUrl =
+					`${book.content.domains.secured.svg}${book.content.key}/`;
+
+				let loaded = 0;
+
+				dom.title.textContent = book.content.name;
+
+				const handleLoadEnd = () => {
+					loaded++;
+
+					if (loaded >= totalPages) {
 						window.print();
+
 						setLoading(false);
-						title.textContent = 'Calameo Download PDF';
-					} else {
-						setCounter(loadedImages, max);
+						dom.title.textContent = APP_TITLE;
+
+						return;
 					}
+
+					setCounter(loaded, totalPages);
 				};
 
-				const sign = ["?_token_=exp=" + expires, "acl=" + path, "hmac=" + signature].join("~");
-				const imageUrl = book.content.domains.secured.svg + book.content.key + '/';
-				setCounter(0, max);
-				for (let page = 1; page <= max; page++) {
-					const src = `${imageUrl}/p${page}.svgz${sign}`;
+				setCounter(0, totalPages);
+
+				const fragment = document.createDocumentFragment();
+
+				for (let page = 1; page <= totalPages; page++) {
 					const image = document.createElement('img');
-					image.addEventListener('load', () => load());
-					image.addEventListener('error', (event) => {
-						imageErrors++;
-						console.error(`Échec de chargement de l'image page ${page}.`, event);
-						load();
+
+					image.loading = 'eager';
+
+					image.src =
+						`${baseImageUrl}/p${page}.svgz${token}`;
+
+					image.addEventListener('load', handleLoadEnd);
+
+					image.addEventListener('error', (error) => {
+						console.error(
+							`Échec de chargement page ${page}`,
+							error
+						);
+
+						handleLoadEnd();
 					});
-					image.src = src;
-					images.appendChild(image);
+
+					fragment.appendChild(image);
 				}
-			} catch (err) {
-				showDocumentError(err instanceof Error ? err.message : String(err), err);
-				return null;
+
+				dom.images.appendChild(fragment);
+
+			} catch (error) {
+				showError(
+					error instanceof Error
+						? error.message
+						: String(error),
+					error
+				);
 			}
 		});
 	</script>
